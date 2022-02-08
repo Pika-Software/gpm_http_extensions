@@ -5,10 +5,12 @@ local packageName = PKG and PKG["name"]
     https://github.com/timschumi/gmod-chttp/releases
 ---------------------------------------------------------------------------]]
 
-if pcall( require, "chttp" ) and (CHTTP ~= nil) then
-	HTTP = CHTTP
-else
-    console.log( "I couldn't download CHHTP, you probably didn't download it,\n I highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" ):setTag( packageName )
+if SERVER then
+    if pcall( require, "chttp" ) and (CHTTP ~= nil) then
+        HTTP = CHTTP
+    else
+        console.log( "I couldn't download CHHTP, you probably didn't download it,\n I highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" ):setTag( packageName )
+    end
 end
 
 local type = type
