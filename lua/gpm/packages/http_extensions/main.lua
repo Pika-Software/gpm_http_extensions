@@ -11,14 +11,6 @@ else
     console.log( "I couldn't download CHHTP, you probably didn't download it,\n I highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" ):setTag( packageName )
 end
 
-GET = 0
-POST = 1
-HEAD = 2
-PUT = 3
-DELETE = 4
-PATCH = 5
-OPTIONS = 6
-
 local type = type
 local HTTP = HTTP
 local emptyTable = {}
@@ -125,15 +117,23 @@ function request:onlySuccess( bool )
     self["__onlySuccess"] = (bool == true) and true or false
 end
 
+HTTP_GET = 0
+HTTP_POST = 1
+HTTP_HEAD = 2
+HTTP_PUT = 3
+HTTP_DELETE = 4
+HTTP_PATCH = 5
+HTTP_OPTIONS = 6
+
 do
     local methods = {
-        [0] = "GET",
-        [1] = "POST",
-        [2] = "HEAD",
-        [3] = "PUT",
-        [4] = "DELETE",
-        [5] = "PATCH",
-        [6] = "OPTIONS"
+        [HTTP_GET] = "GET",
+        [HTTP_POST] = "POST",
+        [HTTP_HEAD] = "HEAD",
+        [HTTP_PUT] = "PUT",
+        [HTTP_DELETE] = "DELETE",
+        [HTTP_PATCH] = "PATCH",
+        [HTTP_OPTIONS] = "OPTIONS"
     }
 
     local blue_color = Color( "#80A6FF" )
