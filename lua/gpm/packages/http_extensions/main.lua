@@ -1,4 +1,4 @@
-local packageName = PKG["name"]
+local packageName = PKG and PKG["name"]
 
 --[[-------------------------------------------------------------------------
     I recommend install CHTTP DLL module, Garry's Mod HTTP broken by Rubat
@@ -150,10 +150,9 @@ do
     local blue_color = Color( "#80A6FF" )
 
     function request:run()
-        if game_ready.isReady() then
+        game_ready.run(function()
             local method = methods[ self["__method"] ]
-            console.devLog( blue_color, method, console.getColor(), ' request to "', blue_color, self["__url"], '"' ):setTag( packageName )
-            return pcall( HTTP, {
+            if (HTTP({
                 ["url"] = self["__url"],
                 ["method"] = method or "GET",
                 ["parameters"] = self["__parameters"],
@@ -179,10 +178,12 @@ do
                         func( 504, ... )
                     end
                 end
-            })
-        else
-            game_ready.wait( self["run"], self )
-        end
+            }) == true) then
+                console.devLog( blue_color, method, console.getColor(), ' request to "', blue_color, self["__url"], '"' ):setTag( packageName )
+            else
+                console.devLog( blue_color, method, console.getColor(), ' request failed! ("', blue_color, self["__url"], '")' ):setTag( packageName )
+            end
+        end)
     end
 end
 
@@ -210,8 +211,8 @@ do
 end
 
 function http.Fetch( url, onSuccess, onFailure, headers, timeout )
-    if game_ready.isReady() then
-        return HTTP({
+    game_ready.run(function()
+        HTTP({
             ["url"] = url,
             ["method"] = "GET",
             ["failed"] = onFailure,
@@ -219,14 +220,12 @@ function http.Fetch( url, onSuccess, onFailure, headers, timeout )
             ["timeout"] = timeout or defaultTimeout,
             ["headers"] = headers or emptyTable
         })
-    else
-        game_ready.wait( http.Fetch, url, onSuccess, onFailure, headers, timeout )
-    end
+    end)
 end
 
 function http.Post( url, parameters, onSuccess, onFailure, headers, timeout )
-    if game_ready.isReady() then
-        return HTTP({
+    game_ready.run(function()
+        HTTP({
             ["url"] = url,
             ["body"] = body,
             ["method"] = "POST",
@@ -236,7 +235,5 @@ function http.Post( url, parameters, onSuccess, onFailure, headers, timeout )
             ["parameters"] = parameters,
             ["headers"] = headers or emptyTable
         })
-    else
-        game_ready.wait( http.Post, url, parameters, onSuccess, onFailure, headers, timeout )
-    end
+    end)
 end
