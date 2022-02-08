@@ -34,11 +34,13 @@ end
 function request:changeMethod( method )
     assert( type( method ) == "number", "bad argument #1 (number expected)")
     self["__method"] = method
+    return self
 end
 
 function request:setTimeout( int )
     assert( type( int ) == "number", "bad argument #1 (number expected)")
     self["__timeout"] = int
+    return self
 end
 
 function request:getTimeout()
@@ -72,11 +74,13 @@ end
 function request:addParameter( key, value )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
     self["__parameters"][key] = value
+    return self
 end
 
 function request:removeParameter( key )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
     self["__parameters"][key] = nil
+    return self
 end
 
 --[[-------------------------------------------------------------------------
@@ -86,11 +90,13 @@ end
 function request:addHeader( key, value )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
     self["__headers"][key] = value
+    return self
 end
 
 function request:removeHeader( key )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
     self["__headers"][key] = nil
+    return self
 end
 
 function request:setBody( body )
@@ -99,6 +105,8 @@ function request:setBody( body )
     else
         self["__body"] = nil
     end
+
+    return self
 end
 
 function request:setContentType( str )
@@ -107,6 +115,8 @@ function request:setContentType( str )
     else
         self["__contentType"] = nil
     end
+
+    return self
 end
 
 function request:getContentType()
@@ -115,6 +125,7 @@ end
 
 function request:onlySuccess( bool )
     self["__onlySuccess"] = (bool == true) and true or false
+    return self
 end
 
 HTTP_GET = 0
