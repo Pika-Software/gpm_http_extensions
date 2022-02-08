@@ -1,4 +1,4 @@
-local packageName = PKG_NAME
+local packageName = PKG["name"]
 
 --[[-------------------------------------------------------------------------
     I recommend install CHTTP DLL module, Garry's Mod HTTP broken by Rubat
