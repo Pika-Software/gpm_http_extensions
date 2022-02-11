@@ -1,4 +1,13 @@
 local packageName = PKG and PKG["name"]
+local type = type
+
+--[[-------------------------------------------------------------------------
+    string.isURL
+---------------------------------------------------------------------------]]
+
+function string.isURL( str )
+	return type( str ) == "string" and str:match("^https?://.*")
+end
 
 --[[-------------------------------------------------------------------------
     I recommend install CHTTP DLL module, Garry's Mod HTTP broken by Rubat
@@ -13,7 +22,6 @@ if SERVER then
     end
 end
 
-local type = type
 local HTTP = HTTP
 local emptyTable = {}
 local defaultTimeout = 60
