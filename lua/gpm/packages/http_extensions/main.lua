@@ -6,7 +6,7 @@ local type = type
 ---------------------------------------------------------------------------]]
 
 function string.isURL( str )
-	return type( str ) == "string" and str:match("^https?://.*")
+	return str:match( "^https?://.*" )
 end
 
 --[[-------------------------------------------------------------------------
