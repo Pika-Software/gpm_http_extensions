@@ -14,12 +14,52 @@ end
     https://github.com/timschumi/gmod-chttp/releases
 ---------------------------------------------------------------------------]]
 
+local log = console.log
+
 if SERVER then
     if pcall( require, "chttp" ) and (CHTTP ~= nil) then
         HTTP = CHTTP
     else
-        console.log( "I couldn't download CHHTP, you probably didn't download it,\n I highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" ):setTag( packageName )
+        log( "I couldn't download CHHTP, you probably didn't download it,\n I highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" ):setTag( packageName )
     end
+end
+
+--[[-------------------------------------------------------------------------
+    string.getFileFromURL
+---------------------------------------------------------------------------]]
+
+local util_CRC = util.CRC
+
+do
+
+    local empty = ""
+    local allowedExtensions = {
+        ["txt"] = true,
+        ["jpg"] = true,
+        ["png"] = true,
+        ["vtf"] = true,
+        ["dat"] = true,
+        ["json"] = true,
+        ["vmt"] = true
+    }
+
+    function string.getFileFromURL( self, hash, onlyAllowedExtensions )
+        local ext = self:GetExtensionFromFilename()
+        local file = self:GetFileFromFilename()
+        local fileName = file:sub( 1, #file - (#ext + 1) )
+
+        if (onlyAllowedExtensions == true) and (allowedExtensions[ext] == nil) then
+            fileName = fileName .. "." .. ext
+            ext = "dat"
+        end
+
+        if (hash == true) then
+            return util_CRC( fileName ) .. "." .. ext
+        end
+
+        return fileName .. "." .. ext
+    end
+
 end
 
 local HTTP = HTTP
@@ -146,6 +186,8 @@ HTTP_DELETE = 4
 HTTP_PATCH = 5
 HTTP_OPTIONS = 6
 
+local game_ready_run = game_ready.run
+
 do
     local methods = {
         [HTTP_GET] = "GET",
@@ -160,7 +202,7 @@ do
     local blue_color = Color( "#80A6FF" )
 
     function request:run()
-        game_ready.run(function()
+        game_ready_run(function()
             local method = methods[ self["__method"] ]
             if (HTTP({
                 ["url"] = self["__url"],
@@ -197,8 +239,9 @@ do
     end
 end
 
+local timer_Simple = timer.Simple
+
 do
-    local timer_Simple = timer.Simple
     function http.request( url, callback, method )
         assert( type( url ) == "string", "bad argument #1 (string expected)")
 
@@ -221,12 +264,16 @@ do
 end
 
 function http.Fetch( url, onSuccess, onFailure, headers, timeout )
-    game_ready.run(function()
+    game_ready_run(function()
         HTTP({
             ["url"] = url,
             ["method"] = "GET",
             ["failed"] = onFailure,
-            ["success"] = onSuccess,
+            ["success"] = function( code, body, headers )
+                if type( onSuccess ) == "function" then
+                    onSuccess( body, body:len(), headers, code )
+                end
+            end,
             ["timeout"] = timeout or defaultTimeout,
             ["headers"] = headers or emptyTable
         })
@@ -234,16 +281,71 @@ function http.Fetch( url, onSuccess, onFailure, headers, timeout )
 end
 
 function http.Post( url, parameters, onSuccess, onFailure, headers, timeout )
-    game_ready.run(function()
+    game_ready_run(function()
         HTTP({
             ["url"] = url,
             ["body"] = body,
             ["method"] = "POST",
             ["failed"] = onFailure,
-            ["success"] = onSuccess,
+            ["success"] = function( code, body, headers )
+                if type( onSuccess ) == "function" then
+                    onSuccess( body, body:len(), headers, code )
+                end
+            end,
             ["timeout"] = timeout or defaultTimeout,
             ["parameters"] = parameters,
             ["headers"] = headers or emptyTable
         })
     end)
+end
+
+--[[-------------------------------------------------------------------------
+    http.Download( url, path )
+---------------------------------------------------------------------------]]
+
+do
+    local file_IsDir = file.IsDir
+    local file_CreateDir = file.CreateDir
+
+    if not file_IsDir( "gpm_http", "DATA" ) then
+        file_CreateDir( "gpm_http", "DATA" )
+    end
+
+    if not file_IsDir( "gpm_http/downloads", "DATA" ) then
+        file_CreateDir( "gpm_http/downloads", "DATA" )
+    end
+end
+
+do
+
+    local file_Write = file.Write
+
+    function http.Download( url, callback, path, onFail )
+        game_ready_run(function()
+            local filename = url:getFileFromURL( false, true )
+            local fullPath = ( type( path ) == "string" and (path .. "/") or "gpm_http/downloads/" ) .. filename
+            log( "Started download: '", filename, "'" ):setTag( packageName )
+
+            http.Fetch( url, function( data, size, headers, code )
+                if http.isSuccess( code ) then
+                    file_Write( fullPath, data )
+
+                    log( "Download completed successfully, file was saved as: 'data/", fullPath, "'" ):setTag( packageName )
+                    if type( callback ) == "function" then
+                        timer_Simple(0, function()
+                            callback( fullPath )
+                        end)
+                    end
+                else
+                    log( "An error code '", code, "' was received while downloading: '", filename, "'" ):setTag( packageName )
+                end
+            end,
+            function( err )
+                log( "Error '", err, "' was received while downloading '", filename, "'" ):setTag( packageName )
+                if type( onFail ) == "function" then
+                    onFail( err )
+                end
+            end, nil, 120 )
+        end)
+    end
 end
