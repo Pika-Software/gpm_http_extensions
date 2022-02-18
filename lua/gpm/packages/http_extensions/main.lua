@@ -289,7 +289,7 @@ function http.Post( url, parameters, onSuccess, onFailure, headers, timeout )
             ["failed"] = onFailure,
             ["success"] = function( code, body, headers )
                 if type( onSuccess ) == "function" then
-                    onSuccess( body, body:len(), headers, code )
+                    onSuccess( body, type(body) == "string" and body:len() or 0, headers, code )
                 end
             end,
             ["timeout"] = timeout or defaultTimeout,
@@ -348,4 +348,6 @@ do
             end, nil, 120 )
         end)
     end
+
+    file.Download = http.Download
 end
