@@ -1,4 +1,4 @@
-local packageName = PKG and PKG["name"]
+local packageName = "HTTP Extensions"
 local type = type
 
 --[[-------------------------------------------------------------------------
@@ -43,7 +43,7 @@ do
         ["vmt"] = true
     }
 
-    function string.getFileFromURL( self, hash, onlyAllowedExtensions )
+    function string.getFileFromURL( self, onlyAllowedExtensions, withoutExtension, hash )
         local ext = self:GetExtensionFromFilename()
         local file = self:GetFileFromFilename()
         local fileName = file:sub( 1, #file - (#ext + 1) )
@@ -54,10 +54,10 @@ do
         end
 
         if (hash == true) then
-            return util_CRC( fileName ) .. "." .. ext
+            return util_CRC( fileName ) .. ((withoutExtension == true) and "" or "." .. ext)
         end
 
-        return fileName .. "." .. ext
+        return fileName .. ((withoutExtension == true) and "" or "." .. ext)
     end
 
 end
@@ -322,7 +322,7 @@ do
 
     function http.Download( url, callback, path, onFail )
         game_ready_run(function()
-            local filename = url:getFileFromURL( false, true )
+            local filename = url:getFileFromURL( true )
             local fullPath = ( type( path ) == "string" and (path .. "/") or "gpm_http/downloads/" ) .. filename
             log( "Started download: '", filename, "'" ):setTag( packageName )
 
