@@ -20,7 +20,7 @@ if SERVER then
     if pcall( require, "chttp" ) and (CHTTP ~= nil) then
         HTTP = CHTTP
     else
-        log( "I couldn't download CHHTP, you probably didn't download it,\n I highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" ):setTag( packageName )
+        log( "I couldn't load CHHTP, you probably didn't download it,\n I highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" ):setTag( packageName )
     end
 end
 
