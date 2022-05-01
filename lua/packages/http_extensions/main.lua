@@ -186,7 +186,7 @@ HTTP_DELETE = 4
 HTTP_PATCH = 5
 HTTP_OPTIONS = 6
 
-local game_ready_run = game_ready.run
+local game_ready_wait = game_ready.wait
 
 do
     local methods = {
@@ -202,7 +202,7 @@ do
     local blue_color = Color( "#80A6FF" )
 
     function request:run()
-        game_ready_run(function()
+        game_ready_wait(function()
             local method = methods[ self["__method"] ]
             if (HTTP({
                 ["url"] = self["__url"],
@@ -264,7 +264,7 @@ do
 end
 
 function http.Fetch( url, onSuccess, onFailure, headers, timeout )
-    game_ready_run(function()
+    game_ready_wait(function()
         HTTP({
             ["url"] = url,
             ["method"] = "GET",
@@ -281,10 +281,9 @@ function http.Fetch( url, onSuccess, onFailure, headers, timeout )
 end
 
 function http.Post( url, parameters, onSuccess, onFailure, headers, timeout )
-    game_ready_run(function()
+    game_ready_wait(function()
         HTTP({
             ["url"] = url,
-            ["body"] = body,
             ["method"] = "POST",
             ["failed"] = onFailure,
             ["success"] = function( code, body, headers )
@@ -321,7 +320,7 @@ do
     local file_Write = file.Write
 
     function http.Download( url, callback, path, onFail )
-        game_ready_run(function()
+        game_ready_wait(function()
             local filename = url:getFileFromURL( true )
             local fullPath = ( type( path ) == "string" and (path .. "/") or "gpm_http/downloads/" ) .. filename
             log( "Started download: '", filename, "'" ):setTag( packageName )
