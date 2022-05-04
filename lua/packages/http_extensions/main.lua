@@ -1,27 +1,33 @@
 local packageName = "HTTP Extensions"
 local type = type
 
---[[-------------------------------------------------------------------------
-    string.isURL
----------------------------------------------------------------------------]]
+local logger = GPM.Logger( packageName )
 
-function string.isURL( str )
-	return str:match( "^https?://.*" )
-end
+local defaultTimeout = CreateConVar("http_timeout", "60", {FCVAR_ARCHIVE}, " - HTTP request default timeout.", 0, 900 ):GetInt()
+cvars.AddChangeCallback("http_timeout", function( name, old, new )
+    defaultTimeout = tonumber( new )
+    logger:info( "Default timeout now is {1}", defaultTimeout )
+end, packageName)
 
 --[[-------------------------------------------------------------------------
     I recommend install CHTTP DLL module, Garry's Mod HTTP broken by Rubat
     https://github.com/timschumi/gmod-chttp/releases
 ---------------------------------------------------------------------------]]
 
-local log = console.log
-
 if (SERVER) then
     if pcall( require, "chttp" ) and (CHTTP ~= nil) then
         HTTP = CHTTP
     else
-        log( "I couldn't load CHHTP, you probably didn't download it,\nI highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" ):setTag( packageName )
+        logger:warn( "I couldn't load CHHTP, you probably didn't download it,\nI highly recommend install CHTTP - dll module, because Garry's Mod HTTP broken by Rubat...\nhttps://github.com/timschumi/gmod-chttp/releases" )
     end
+end
+
+--[[-------------------------------------------------------------------------
+    string.isURL( `string` str )
+---------------------------------------------------------------------------]]
+
+function string.isURL( str )
+	return str:match( "^https?://.*" ) ~= nil
 end
 
 --[[-------------------------------------------------------------------------
@@ -43,7 +49,7 @@ do
         ["vmt"] = true
     }
 
-    function string.getFileFromURL( self, onlyAllowedExtensions, withoutExtension, hash )
+    function string.getFileFromURL( self, onlyAllowedExtensions, withoutExtension, hashed )
         local ext = self:GetExtensionFromFilename()
         local file = self:GetFileFromFilename()
         local fileName = file:sub( 1, #file - (#ext + 1) )
@@ -53,7 +59,7 @@ do
             ext = "dat"
         end
 
-        if (hash == true) then
+        if (hashed == true) then
             return util_CRC( fileName ) .. ((withoutExtension == true) and "" or "." .. ext)
         end
 
@@ -64,37 +70,36 @@ end
 
 local HTTP = HTTP
 local emptyTable = {}
-local defaultTimeout = 60
 
 function http.isSuccess( code )
     return ((code > 199) and (code < 300)) or (code == 0)
 end
 
 local request = {}
-request["__index"] = request
+request.__index = request
 debug.getregistry().HTTPRequest = request
 
 do
     local string_format = string.format
     function request:__tostring()
-        return string_format( "HTTP %s Request [%s] ~ %s", self["__method"], self["__url"], self["__status"] )
+        return string_format( "HTTP %s Request [%s] ~ %s", self.Method, self.URL, self["__status"] )
     end
 end
 
 function request:changeMethod( method )
     assert( type( method ) == "number", "bad argument #1 (number expected)")
-    self["__method"] = method
+    self.Method = method
     return self
 end
 
 function request:setTimeout( int )
     assert( type( int ) == "number", "bad argument #1 (number expected)")
-    self["__timeout"] = int
+    self.Timeout = int
     return self
 end
 
 function request:getTimeout()
-    return self["__timeout"] or defaultTimeout
+    return self.Timeout or defaultTimeout
 end
 
 --[[-------------------------------------------------------------------------
@@ -105,7 +110,7 @@ do
     local table_insert = table.insert
     function request:addCallback( func )
         assert( type( func ) == "function", "bad argument #1 (function expected)")
-        return table_insert( self["__callbacks"], func )
+        return table_insert( self.Callbacks, func )
     end
 end
 
@@ -113,7 +118,7 @@ do
     local table_remove = table.remove
     function request:removeCallback( int )
         assert( type( int ) == "number", "bad argument #1 (number expected)")
-        table_remove( self["__callbacks"], int )
+        table_remove( self.Callbacks, int )
     end
 end
 
@@ -123,13 +128,13 @@ end
 
 function request:addParameter( key, value )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
-    self["__parameters"][key] = value
+    self.Parameters[key] = value
     return self
 end
 
 function request:removeParameter( key )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
-    self["__parameters"][key] = nil
+    self.Parameters[key] = nil
     return self
 end
 
@@ -139,21 +144,21 @@ end
 
 function request:addHeader( key, value )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
-    self["__headers"][key] = value
+    self.Headers[key] = value
     return self
 end
 
 function request:removeHeader( key )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
-    self["__headers"][key] = nil
+    self.Headers[key] = nil
     return self
 end
 
 function request:setBody( body )
     if type( body ) == "string" then
-        self["__body"] = body
+        self.Body = body
     else
-        self["__body"] = nil
+        self.Body = nil
     end
 
     return self
@@ -161,20 +166,20 @@ end
 
 function request:setContentType( str )
     if type( str ) == "string" then
-        self["__contentType"] = body
+        self.ContentType = body
     else
-        self["__contentType"] = nil
+        self.ContentType = nil
     end
 
     return self
 end
 
 function request:getContentType()
-    return self["__contentType"] or "text/plain; charset=utf-8"
+    return self.ContentType or "text/plain; charset=utf-8"
 end
 
 function request:onlySuccess( bool )
-    self["__onlySuccess"] = (bool == true) and true or false
+    self.OnlySuccess = bool == true
     return self
 end
 
@@ -189,6 +194,7 @@ HTTP_OPTIONS = 6
 local game_ready_wait = game_ready.wait
 
 do
+
     local methods = {
         [HTTP_GET] = "GET",
         [HTTP_POST] = "POST",
@@ -199,44 +205,45 @@ do
         [HTTP_OPTIONS] = "OPTIONS"
     }
 
-    local blue_color = Color( "#80A6FF" )
-
     function request:run()
         game_ready_wait(function()
-            local method = methods[ self["__method"] ]
-            if (HTTP({
-                ["url"] = self["__url"],
-                ["method"] = method or "GET",
-                ["parameters"] = self["__parameters"],
-                ["headers"] = self["__headers"],
-                ["body"] = self["__body"],
+
+            local req = {
+                ["url"] = self.URL,
+                ["method"] = methods[ self.Method ] or "GET",
+                ["parameters"] = self.Parameters,
+                ["headers"] = self.Headers,
+                ["body"] = self.Body,
                 ["type"] = self:getContentType(),
                 ["timeout"] = self:getTimeout(),
                 ["success"] = function( code, body, headers, ... )
-                    if self["__onlySuccess"] and not http.isSuccess( code ) then
+                    if self.OnlySuccess and not http.isSuccess( code ) then
                         return
                     end
 
-                    for num, func in ipairs( self["__callbacks"] ) do
+                    for num, func in ipairs( self.Callbacks ) do
                         func( code, body, headers, ... )
                     end
                 end,
                 ["failed"] = function( ... )
-                    if self["__onlySuccess"] then
+                    if self.OnlySuccess then
                         return
                     end
 
-                    for num, func in ipairs( self["__callbacks"] ) do
+                    for num, func in ipairs( self.Callbacks ) do
                         func( 504, ... )
                     end
                 end
-            }) == true) then
-                console.devLog( blue_color, method, console.getColor(), ' request to "', blue_color, self["__url"], '"' ):setTag( packageName )
+            }
+
+            if HTTP( req ) then
+                logger:debug( "{1} request to {2} ", req.method, req.url )
             else
-                console.devLog( blue_color, method, console.getColor(), ' request failed! ("', blue_color, self["__url"], '")' ):setTag( packageName )
+                logger:debug( "{1} request failed! ({2})", req.method, req.url )
             end
         end)
     end
+
 end
 
 local timer_Simple = timer.Simple
@@ -246,11 +253,11 @@ do
         assert( type( url ) == "string", "bad argument #1 (string expected)")
 
         local new = setmetatable({
-            ["__url"] = url,
-            ["__headers"] = {},
-            ["__callbacks"] = {},
-            ["__parameters"] = {},
-            ["__method"] = method or 0
+            ["URL"] = url,
+            ["Headers"] = {},
+            ["Callbacks"] = {},
+            ["Parameters"] = {},
+            ["Method"] = method or HTTP_GET
         }, request)
 
         new:addCallback( callback )
@@ -323,24 +330,24 @@ do
         game_ready_wait(function()
             local filename = url:getFileFromURL( true )
             local fullPath = ( type( path ) == "string" and (path .. "/") or "gpm_http/downloads/" ) .. filename
-            log( "Started download: '", filename, "'" ):setTag( packageName )
+            logger:info( "Started download: '{1}'", filename )
 
             http.Fetch( url, function( data, size, headers, code )
                 if http.isSuccess( code ) then
                     file_Write( fullPath, data )
 
-                    log( "Download completed successfully, file was saved as: 'data/", fullPath, "'" ):setTag( packageName )
+                    logger:info( "Download completed successfully, file was saved as: 'data/{1}'", fullPath )
                     if type( callback ) == "function" then
                         timer_Simple(0, function()
                             callback( fullPath )
                         end)
                     end
                 else
-                    log( "An error code '", code, "' was received while downloading: '", filename, "'" ):setTag( packageName )
+                    logger:info( "An error code '{1}' was received while downloading: '{2}'", code, filename )
                 end
             end,
             function( err )
-                log( "Error '", err, "' was received while downloading '", filename, "'" ):setTag( packageName )
+                logger:error( "An error occurred while trying to download {1}:\n{2}'", filename, err )
                 if type( onFail ) == "function" then
                     onFail( err )
                 end
