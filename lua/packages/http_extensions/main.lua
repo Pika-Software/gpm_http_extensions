@@ -332,8 +332,7 @@ do
         logger:info( "Started download: '{1}'", filename )
 
         http.Fetch( url, function( data, size, headers, code )
-            if http.isSuccess( code ) then
-                print( size )
+            if http.isSuccess( code ) and (size ~= 0) then
                 local file_class = file.Open( path, "wb", "DATA" )
                 if (file_class == nil) then
                     logger:warn( "Downloading failed, file failed to open due to it not existing or being used by another process: 'data/{1}'", path )
@@ -343,7 +342,7 @@ do
                 file_class:Write( data )
                 file_class:Close()
 
-                pcall( onSuccess, path, data, headers )
+                pcall( onSuccess, path, data, headers, size )
 
                 logger:info( "Download completed successfully, file was saved as: 'data/{1}'", path )
 

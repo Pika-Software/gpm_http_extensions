@@ -2,7 +2,7 @@ Name = "HTTP Extensions"
 Description = "Library extending HTTP and correcting Rubat errors."
 
 Author = "PrikolMen:-b"
-Version = "1.2.0"
+Version = "1.2.1"
 License = "MIT"
 
 Dependencies = {
