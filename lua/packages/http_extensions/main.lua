@@ -40,18 +40,20 @@ do
 
     local empty = ""
     local allowedExtensions = {
+        ["json"] = true,
         ["txt"] = true,
         ["jpg"] = true,
         ["png"] = true,
         ["vtf"] = true,
         ["dat"] = true,
-        ["json"] = true,
         ["vmt"] = true
     }
 
+    local system_IsLinux = system.IsLinux
     function string.getFileFromURL( self, onlyAllowedExtensions, withoutExtension, hashed )
-        local ext = self:GetExtensionFromFilename()
-        local file = self:GetFileFromFilename()
+        local url = system_IsLinux() and self:lower() or self
+        local ext = url:GetExtensionFromFilename()
+        local file = url:GetFileFromFilename()
         local fileName = file:sub( 1, #file - (#ext + 1) )
 
         if (onlyAllowedExtensions == true) and (allowedExtensions[ext] == nil) then
@@ -329,7 +331,7 @@ do
     function http.Download( url, onSuccess, onFail, save_path )
         local filename = url:getFileFromURL( true )
         local path = ( save_path ~= nil and ( save_path .. "/" ) or "gpm_http/downloads/" ) .. filename
-        logger:info( "Started download: '{1}'", filename )
+        logger:info( "File '{1}' is downloading...", filename )
 
         http.Fetch( url, function( data, size, headers, code )
             if http.isSuccess( code ) then
