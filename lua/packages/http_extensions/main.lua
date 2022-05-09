@@ -333,7 +333,7 @@ do
 
         http.Fetch( url, function( data, size, headers, code )
             if http.isSuccess( code ) then
-                if (size ~= 0) then
+                if (size == 0) then
                     logger:warn( "File [{1}] size is zero!", filename )
                     return
                 end
