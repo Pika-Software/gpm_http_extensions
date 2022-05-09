@@ -326,34 +326,40 @@ do
 
     local file_Write = file.Write
 
-    function http.Download( url, callback, path, onFail )
-        game_ready_wait(function()
-            local filename = url:getFileFromURL( true )
-            local fullPath = ( type( path ) == "string" and (path .. "/") or "gpm_http/downloads/" ) .. filename
-            logger:info( "Started download: '{1}'", filename )
+    function http.Download( url, onSuccess, onFail, save_path )
+        local filename = url:getFileFromURL( true )
+        local path = ( save_path ~= nil and ( save_path .. "/" ) or "gpm_http/downloads/" ) .. filename
+        logger:info( "Started download: '{1}'", filename )
 
-            http.Fetch( url, function( data, size, headers, code )
-                if http.isSuccess( code ) then
-                    file_Write( fullPath, data )
+        http.Fetch( url, function( data, size, headers, code )
+            if http.isSuccess( code ) then
+                print( size )
+                local file_class = file.Open( path, "wb", "DATA" )
+                if (file_class == nil) then
+                    logger:warn( "Downloading failed, file failed to open due to it not existing or being used by another process: 'data/{1}'", path )
+                    return
+                end
 
-                    logger:info( "Download completed successfully, file was saved as: 'data/{1}'", fullPath )
-                    if type( callback ) == "function" then
-                        timer_Simple(0, function()
-                            callback( fullPath )
-                        end)
-                    end
-                else
-                    logger:info( "An error code '{1}' was received while downloading: '{2}'", code, filename )
-                end
-            end,
-            function( err )
-                logger:error( "An error occurred while trying to download {1}:\n{2}'", filename, err )
-                if type( onFail ) == "function" then
-                    onFail( err )
-                end
-            end, nil, 120 )
-        end)
+                file_class:Write( data )
+                file_class:Close()
+
+                pcall( onSuccess, path, data, headers )
+
+                logger:info( "Download completed successfully, file was saved as: 'data/{1}'", path )
+
+                return
+            end
+
+            logger:info( "An error code '{1}' was received while downloading: '{2}'", code, filename )
+        end,
+        function( err )
+            logger:error( "An error occurred while trying to download {1}:\n{2}'", filename, err )
+            if type( onFail ) == "function" then
+                onFail( err )
+            end
+        end, nil, 120 )
     end
 
     file.Download = http.Download
+
 end
