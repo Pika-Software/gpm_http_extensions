@@ -136,13 +136,13 @@ end
 
 function request:addParameter( key, value )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
-    self.Parameters[key] = value
+    self.Parameters[ key ] = value
     return self
 end
 
 function request:removeParameter( key )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
-    self.Parameters[key] = nil
+    self.Parameters[ key ] = nil
     return self
 end
 
@@ -152,13 +152,13 @@ end
 
 function request:addHeader( key, value )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
-    self.Headers[key] = value
+    self.Headers[ key ] = value
     return self
 end
 
 function request:removeHeader( key )
     assert( type( key ) == "string", "bad argument #1 (string expected)")
-    self.Headers[key] = nil
+    self.Headers[ key ] = nil
     return self
 end
 
