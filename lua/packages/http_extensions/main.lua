@@ -432,16 +432,18 @@ end
     http.PrepareUpload( content, filename )
         returns headers, prepared content
 ---------------------------------------------------------------------------]]
-local format = "--%s\r\n%s\r\n%s\r\n--%s--\r\n"
-function http.PrepareUpload( content, filename )
-	local boundary = "fboundary".. math.random( 1, 100 )
-	local header_bound = "Content-Disposition: form-data; name=\"file\"; filename=\"".. filename .."\"\r\nContent-Type: application/octet-stream\r\n"
-	local data = format:format( boundary, header_bound, content, boundary )
+do
+    local format = "--%s\r\n%s\r\n%s\r\n--%s--\r\n"
+    function http.PrepareUpload( content, filename )
+        local boundary = "fboundary".. math.random( 1, 100 )
+        local header_bound = "Content-Disposition: form-data; name=\"file\"; filename=\"".. filename .."\"\r\nContent-Type: application/octet-stream\r\n"
+        local data = format:format( boundary, header_bound, content, boundary )
 
-	return {
-		{ "Content-Length", #data },
-		{ "Content-Type", "multipart/form-data; boundary=" .. boundary }
-	}, data
+        return {
+            { "Content-Length", #data },
+            { "Content-Type", "multipart/form-data; boundary=" .. boundary }
+        }, data
+    end
 end
 
 --[[ tested on api.vk.com (photos.getWallUploadServer method)
