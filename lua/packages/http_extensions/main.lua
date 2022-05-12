@@ -374,3 +374,80 @@ do
     file.Download = http.Download
 
 end
+
+-- https://github.com/Be1zebub/Small-GLua-Things/blob/master/httputils.lua
+
+--[[-------------------------------------------------------------------------
+    http.Encode( str )
+        encode URI https://en.wikipedia.org/wiki/Percent-encoding
+---------------------------------------------------------------------------]]
+function http.Encode( str )
+	return (str:gsub("[^%w _~%.%-]", function( char )
+		return string_format("%%%02X", char:byte())
+	end):gsub(" ", "+"))
+end
+
+--[[-------------------------------------------------------------------------
+    http.Decode( str )
+        decode URI https://en.wikipedia.org/wiki/Percent-encoding
+---------------------------------------------------------------------------]]
+do
+    local string_char = string.char
+    function http.Decode( str )
+        return (str:gsub("+", " "):gsub("%%(%x%x)", function( c )
+            return string_char( tonumber( c, 16 ) )
+        end))
+    end
+end
+
+--[[-------------------------------------------------------------------------
+    http.ParseQuery( str )
+        parse string query, returns assoc query table
+---------------------------------------------------------------------------]]
+function http.ParseQuery( str )
+	local query = {}
+
+	for key, value in str:gmatch("([^&=?]-)=([^&=?]+)") do
+		query[ key ] = http.Decode( value )
+	end
+
+	return query
+end
+
+--[[-------------------------------------------------------------------------
+    http.ParseQuery( str )
+        format string query from table
+---------------------------------------------------------------------------]]
+function http.Query( tbl )
+	local out
+
+	for key, value in pairs( tbl ) do
+		out = (out and (out .."&") or "") .. key .."=".. value
+	end
+
+	return "?".. out
+end
+
+--[[-------------------------------------------------------------------------
+    http.PrepareUpload( content, filename )
+        returns headers, prepared content
+---------------------------------------------------------------------------]]
+local format = "--%s\r\n%s\r\n%s\r\n--%s--\r\n"
+function http.PrepareUpload( content, filename )
+	local boundary = "fboundary".. math.random( 1, 100 )
+	local header_bound = "Content-Disposition: form-data; name=\"file\"; filename=\"".. filename .."\"\r\nContent-Type: application/octet-stream\r\n"
+	local data = format:format( boundary, header_bound, content, boundary )
+
+	return {
+		{ "Content-Length", #data },
+		{ "Content-Type", "multipart/form-data; boundary=" .. boundary }
+	}, data
+end
+
+--[[ tested on api.vk.com (photos.getWallUploadServer method)
+	local image = file.Read("/home/me.jpg")
+	local headers, content = http.PrepareUpload(image, "me.jpg")
+	local succ, res, result = pcall(http.request, "POST", "https://api.incredible-gmod.ru/upload", headers, content)
+	print(result)
+	  > https://incredible-gmod.ru/files/cxWJnf6
+]]--
