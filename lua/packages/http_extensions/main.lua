@@ -355,7 +355,9 @@ do
                 file_class:Write( data )
                 file_class:Close()
 
-                pcall( onSuccess, path, data, headers, size )
+                if (onSuccess ~= nil) then
+                    onSuccess( path, data, headers, size )
+                end
 
                 logger:info( "Download completed successfully, file was saved as: 'data/{1}'", path )
                 return
